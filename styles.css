@@ -1,0 +1,51 @@
+body {
+	margin: 0;
+	background-color: lightgrey;
+}
+
+h1 {
+	font: monospace;
+	margin:0;
+	margin-bottom: 20px;
+}
+
+.simulation-button {
+	width: 40%;
+	height: 35px;
+	margin-right: 10px;
+	margin-left: 10px;
+	margin-bottom: 20px;
+	border-radius: 8px;
+	font-weight: bold;
+	font-size: 11pt;
+}
+
+.mapbox {
+	width: 75vw;
+	height: 100vh;
+}
+
+.settings-menu {
+	margin-left: 10px;
+	width: 25vw;
+	height: 100vh;
+}
+
+.settings-column {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	margin-right: 20px;
+	border-bottom: 2px solid;
+}
+
+.title {
+	border-bottom: 2px solid;
+	margin-right: 20px;
+	margin-top: 20px;
+}
+
+#main {
+	display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
