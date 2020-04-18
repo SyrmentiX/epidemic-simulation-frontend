@@ -5,8 +5,48 @@ var map = new mapboxgl.Map({
 	style: 'mapbox://styles/mapbox/streets-v11'
 });
 
+var curclesId = 0;
+
+var markCountry = function(countryName) {
+	countryName
+	var json = "https://api.mapbox.com/geocoding/v5/mapbox.places/"+countryName+".json?access_token=pk.eyJ1Ijoic3lybSIsImEiOiJjazk1ZGJqZnEwNDJlM21tcHZxbnRwbW1tIn0.2GX6n3BUAz-c4vqDKb6dpw"
+	var request = new XMLHttpRequest();
+	request.open('GET', json)
+	request.responseType = 'json';
+	request.send();
+	request.onload = function() {
+		var coordinates = request.response;
+	  	for (var i = coordinates.features.length - 1; i >= 0; i--) {
+	  		if (coordinates.features[i].place_type[0] == "country") {
+	  			writeCircle(coordinates.features[i]);
+	  			return coordinates.features[i];
+	  		}
+	  	}
+	  	return null;
+	}
+}
+
+var writeCircle = function(country) {
+	console.log(country);
+	if (country != null) {
+		map.addSource("polygon"+curclesId, createGeoJSONCircle(country.center, 100));
+
+		map.addLayer({
+		    "id": "polygon"+curclesId,
+	    	"type": "fill",
+    		"source": "polygon"+curclesId,
+    		"layout": {},
+    		"paint": {
+	        	"fill-color": "blue",
+    	    	"fill-opacity": 0.6
+    		}
+		});
+		++curclesId;
+	}
+}
+
 var createGeoJSONCircle = function(center, radiusInKm, points) {
-    if(!points) points = 64;
+    if (!points) points = 64;
 
     var coords = {
         latitude: center[1],
@@ -45,16 +85,7 @@ var createGeoJSONCircle = function(center, radiusInKm, points) {
 };
 
 map.on('load', function() {
-	map.addSource("polygon", createGeoJSONCircle([0, 0], 1000));
-
-	map.addLayer({
-	    "id": "polygon",
-    	"type": "fill",
-    	"source": "polygon",
-    	"layout": {},
-    	"paint": {
-	        "fill-color": "blue",
-    	    "fill-opacity": 0.6
-    	}
-	});
+	markCountry("Russia Federation");
+	markCountry("USA");
+	markCountry("United Kingdom");
 });

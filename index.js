@@ -8,14 +8,18 @@ Vue.component('settings-menu', {
 			<h1>EPIDEMICSM</h1>\
 			</div>\
 			<div class="settings-column">\
-				<p>todo Timeline</p>\
+				<p>todo Timeline add calendar</p>\
 			</div>\
 			<div class="settings-column">\
 				<button class="simulation-button">Launch</button>\
 				<button class="simulation-button">Stop</button>\
+				<button class="simulation-button">Reset</button>\
 			</div>\
 			<div class="settings-column">\
 				<p>todo Presets</p>\
+			</div>\
+			<div class="top-column">\
+				<p>todo Top Infected Country</p>\
 			</div>\
 		</div>'
 })

@@ -10,7 +10,7 @@ h1 {
 }
 
 .simulation-button {
-	width: 40%;
+	width: 65px;
 	height: 35px;
 	margin-right: 10px;
 	margin-left: 10px;
@@ -36,6 +36,12 @@ h1 {
 	margin-bottom: 20px;
 	margin-right: 20px;
 	border-bottom: 2px solid;
+}
+
+.top-column {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	margin-right: 20px;
 }
 
 .title {
