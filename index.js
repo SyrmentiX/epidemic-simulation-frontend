@@ -17,7 +17,8 @@ Vue.component('settings-menu', {
 				<button class="simulation-button">Reset</button>\
 			</div>\
 			<div class="settings-column">\
-				<p>todo Presets</p>\
+				<button class="simulation-button">Start day</button>\
+				<button class="simulation-button">Current day</button>\
 			</div>\
 			<div class="top-column">\
 				<p>todo Top Infected Country</p>\

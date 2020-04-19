@@ -2,6 +2,8 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoic3lybSIsImEiOiJjazk1ZGJqZnEwNDJlM21tcHZxbnRwb
 
 var countryInformation;
 var prevCountryInfo;
+var isLaunched = false;
+var step = 0;
 
 var map = new mapboxgl.Map({
 	container: 'map',
@@ -15,7 +17,7 @@ var popup = new mapboxgl.Popup({
 	closeOnClick: false
 });
 
-var drawLayers = function(coronaJson, countriesJson) {
+var drawLayers = function(currentSituationJson, countriesJson) {
 	map.addSource('countries', {
 		'type': 'geojson',
 		'data': countriesJson
@@ -49,7 +51,7 @@ var drawLayers = function(coronaJson, countriesJson) {
 			while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
 				coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
 			}
-			var postalId = coronaJson.data[0].countries[e.features[0].properties.POSTAL];
+			var postalId = currentSituationJson.data[].countries[e.features[0].properties.POSTAL];
 			if (postalId != null) {
 				hoveredStateId = e.features[0].id;
 				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
@@ -67,14 +69,20 @@ var drawLayers = function(coronaJson, countriesJson) {
 			popup.remove();
 		}
 		hoveredStateId = null;
-		
 	});
 }
 
-var onUpdate = function() {
+var loadTodayData = function() {
 	$.getJSON("http://104.248.59.99:8080/today", function(infoJson) {
 		console.log(infoJson);
-		drawLayers(infoJson, countryInformation);	
+		drawLayers(infoJson, countryInformation);
+	});
+}
+
+var loadPreviousData = function() {
+	$.getJSON("http://104.248.59.99:8080/JHUCSSE", function(pastinfoJson) {
+		console.log(pastinfoJson);
+		prevCountryInfo = pastinfoJson;
 	});
 }
 
@@ -82,11 +90,29 @@ map.on('load', function() {
 	$.getJSON("http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson", function(countriesJson) {
 		console.log(countriesJson);
 		countryInformation = countriesJson;
-		onUpdate();
+		loadTodayData();
 	});
-	
-	$.getJSON("http://104.248.59.99:8080/JHUCSSE", function(pastinfoJson) {
-		console.log(pastinfoJson);
-		prevCountryInfo = pastinfoJson;
-	});
+	loadPreviousData();
 });
+
+var onUpdate = function() {
+	++step;
+}
+
+var launchButton = function() {
+	if (prevCountryInfo != null && isLaunched != true) {
+
+	}
+}
+
+var resetButton = function() {
+	if (prevCountryInfo != null) {
+		step = 0;
+	}
+}
+
+var stopButton = function() {
+	if (prevCountryInfo != null && isLaunched != true) {
+
+	}
+}
