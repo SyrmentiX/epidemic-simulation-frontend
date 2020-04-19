@@ -39,7 +39,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	midInfected /= countCountry
 
 	for (var key in currentSituationJson.data[day].countries) {
-		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected / midInfected)
+		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected * 2000 / currentSituationJson.data[day].countries[key].population)
 		var r = Math.round(255 * p)
 		var g = Math.round(255 * (1.0 - p))
 
