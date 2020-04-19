@@ -9,7 +9,7 @@ var futureInfoJson;
 var isLaunched = false;
 var currentTimeLine = PAST;
 var day = 0;
-var screen = 0;
+var subScreen = 2;
 var interval;
 
 var map = new mapboxgl.Map({
@@ -24,10 +24,28 @@ var popup = new mapboxgl.Popup({
 	closeOnClick: false
 });
 
-var removeSource = function() {
-	map.removeLayer('countries');
-	map.removeSource('countries');
+var removeSourceFirst = function() {
+	map.removeLayer('countries1');
+	map.removeSource('countries1');
 }
+
+var removeSourceSecond = function() {
+	map.removeLayer('countries2');
+	map.removeSource('countries2');
+}
+
+var changeLayersFirstToSecond = function() {
+	removeSourceFirst();
+	map.setLayoutProperty('countries2', 'visibility', 'visible');
+	subScreen = 1;
+}
+
+var changeLayersSecondToFirst = function() {
+	removeSourceSecond();
+	map.setLayoutProperty('countries1', 'visibility', 'visible');
+	subScreen = 2;
+}
+
 
 var drawLayers = function(currentSituationJson, countriesJson) {
 	var midInfected = 0
@@ -64,13 +82,13 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 		popup.remove();
 	}
 
-	map.addSource('countries', {
+	map.addSource('countries1', {
 		'type': 'geojson',
 		'data': countriesJson
 	});
 
 	map.addLayer({
-		'id': 'countries',
+		'id': 'countries1',
 		'type': 'fill',
 		'source': 'countries',
 		'layout': {
@@ -83,7 +101,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	 	 }
 	});
 
-	map.on('mousemove', 'countries', function(e) {
+	map.on('mousemove', 'countries1', function(e) {
 		map.getCanvas().style.cursor = 'pointer';
 		if (e.features.length > 0) {
 			if (hoveredStateId) {
@@ -103,7 +121,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 		}
 	});
 
-	map.on('mouseleave', 'countries', function() {
+	map.on('mouseleave', 'countries1', function() {
 		if (hoveredStateId) {
 			map.getCanvas().style.cursor = '';
 			popup.remove();
@@ -163,7 +181,7 @@ var frameIdx = function() {
 var launchButton = function() {
 	if (prevInfoJson != null && isLaunched != true) {
 		isLaunched = true;
-		interval = setInterval(frameIdx, 1000);
+		interval = setInterval(frameIdx, 1500);
 	}
 }
 
@@ -179,4 +197,168 @@ var stopButton = function() {
 		isLaunched = false;
 		clearInterval(interval);
 	}
+}
+
+var launchAsync = function() {
+	if (subScreen == 1) {
+		loadScreenFirst();
+	} else {
+		loadScreenSecond();
+	}
+}
+
+async function loadScreenFirst() {
+	var midInfected = 0
+	var countCountry = 0
+
+    for (var key in currentSituationJson.data[day].countries) {
+		midInfected += currentSituationJson.data[day].countries[key].infected
+		countCountry++
+	}
+	midInfected /= countCountry
+
+	for (var key in currentSituationJson.data[day].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected / midInfected)
+		var r = Math.round(255 * p)
+		var g = Math.round(255 * (1.0 - p))
+
+		var color = "rgba(" + r + ", " + g + ", 0, 1)"
+		currentSituationJson.data[day].countries[key].color = color
+	}
+
+	for (var i = 0; i < countriesJson.features.length; i++) {
+		countriesJson.features[i].properties["color"] = 'transparent'
+		for (var key in currentSituationJson.data[day].countries) {
+			if (countriesJson.features[i].properties["ISO_A2"] == key) {
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
+				break
+			}
+		}
+	}
+
+	map.addSource('countries1', {
+		'type': 'geojson',
+		'data': countriesJson
+	});
+
+	map.addLayer({
+		'id': 'countries1',
+		'type': 'fill',
+		'source': 'countries1',
+		'layout': {
+			'visibility': 'none',
+		},
+		'paint': {
+			'fill-color': ['get', 'color'],
+			'fill-opacity': 0.6,
+			'fill-outline-color': 'rgba(200, 100, 240, 1)'					
+	 	 }
+	});
+
+	map.on('mousemove', 'countries1', function(e) {
+		map.getCanvas().style.cursor = 'pointer';
+		if (e.features.length > 0) {
+			if (hoveredStateId) {
+				map.getCanvas().style.cursor = '';
+				popup.remove();
+			}
+
+			var postalId = currentSituationJson.data[day].countries[e.features[0].properties.ISO_A2];
+			if (postalId != null) {
+				hoveredStateId = e.features[0].id;
+				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
+							   <strong>Infected: </strong>'+postalId.infected+'<br>\
+							   <strong>Recovered: </strong>'+postalId.recovered+'<br>\
+							   <strong>Deaths: </strong>'+postalId.deaths;
+				popup.setLngLat(e.lngLat).setHTML(message).addTo(map);
+			}
+		}
+	});
+
+	map.on('mouseleave', 'countries1', function() {
+		if (hoveredStateId) {
+			map.getCanvas().style.cursor = '';
+			popup.remove();
+		}
+		hoveredStateId = null;
+	});
+	return true;
+}
+
+async function loadScreenSecond() {
+	var midInfected = 0
+	var countCountry = 0
+
+    for (var key in currentSituationJson.data[day].countries) {
+		midInfected += currentSituationJson.data[day].countries[key].infected
+		countCountry++
+	}
+	midInfected /= countCountry
+
+	for (var key in currentSituationJson.data[day].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected / midInfected)
+		var r = Math.round(255 * p)
+		var g = Math.round(255 * (1.0 - p))
+
+		var color = "rgba(" + r + ", " + g + ", 0, 1)"
+		currentSituationJson.data[day].countries[key].color = color
+	}
+
+	for (var i = 0; i < countriesJson.features.length; i++) {
+		countriesJson.features[i].properties["color"] = 'transparent'
+		for (var key in currentSituationJson.data[day].countries) {
+			if (countriesJson.features[i].properties["ISO_A2"] == key) {
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
+				break
+			}
+		}
+	}
+
+	map.addSource('countries2', {
+		'type': 'geojson',
+		'data': countriesJson
+	});
+
+	map.addLayer({
+		'id': 'countries2',
+		'type': 'fill',
+		'source': 'countries2',
+		'layout': {
+			'visibility': 'none',
+		},
+		'paint': {
+			'fill-color': ['get', 'color'],
+			'fill-opacity': 0.6,
+			'fill-outline-color': 'rgba(200, 100, 240, 1)'					
+	 	 }
+	});
+
+	map.on('mousemove', 'countries2', function(e) {
+		map.getCanvas().style.cursor = 'pointer';
+		if (e.features.length > 0) {
+			if (hoveredStateId) {
+				map.getCanvas().style.cursor = '';
+				popup.remove();
+			}
+
+			var postalId = currentSituationJson.data[day].countries[e.features[0].properties.ISO_A2];
+			if (postalId != null) {
+				hoveredStateId = e.features[0].id;
+				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
+							   <strong>Infected: </strong>'+postalId.infected+'<br>\
+							   <strong>Recovered: </strong>'+postalId.recovered+'<br>\
+							   <strong>Deaths: </strong>'+postalId.deaths;
+				popup.setLngLat(e.lngLat).setHTML(message).addTo(map);
+			}
+		}
+	});
+
+	map.on('mouseleave', 'countries2', function() {
+		if (hoveredStateId) {
+			map.getCanvas().style.cursor = '';
+			popup.remove();
+		}
+		hoveredStateId = null;
+	});
+	return true;
 }
