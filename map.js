@@ -9,6 +9,7 @@ var futureInfoJson;
 var isLaunched = false;
 var currentTimeLine = PAST;
 var day = 0;
+var screen = 0;
 var interval;
 
 var map = new mapboxgl.Map({
@@ -67,6 +68,9 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 		'id': 'countries',
 		'type': 'fill',
 		'source': 'countries',
+		'layout': {
+			'visibility': 'visible',
+		},
 		'paint': {
 			'fill-color': ['get', 'color'],
 			'fill-opacity': 0.6,
@@ -146,13 +150,13 @@ var frameIdx = function() {
 		drawEpidemicDay(day, currentTimeLine);
 		++day
 		if (day == prevInfoJson.data.length) {
-			day = 0;
-			currentTimeLine = FUTURE;	
+			currentTimeLine = FUTURE;
+			//day = 0;
 		}
 	} else {
 		stopButton();
-		//drawEpidemicDay(day, currentTimeLine);
-		//++day
+		drawEpidemicDay(day, currentTimeLine);
+		++day
 	}
 }
 
