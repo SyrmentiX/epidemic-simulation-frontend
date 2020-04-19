@@ -56,7 +56,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 			}
 		}
 	}
-	console.log(countriesJson)
+	document.getElementById("dateNow").value = currentSituationJson.data[day].date
 
 	map.addSource('countries', {
 		'type': 'geojson',
