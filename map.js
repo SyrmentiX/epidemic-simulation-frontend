@@ -114,17 +114,16 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 
 var loadPreviousData = function() {
 	$.getJSON("http://104.248.59.99:8080/predict?duration=20", function(pastinfoJson) {
-		console.log(pastinfoJson);
 		prevInfoJson = pastinfoJson;
 		document.getElementById("dateNow").min = prevInfoJson.data[0].date
 		document.getElementById("dateNow").max = prevInfoJson.data[prevInfoJson.data.length - 1].date
 		drawLayers(pastinfoJson, countryInformation);
+		document.getElementById("dateNow").disabled = false;
 	});
 }
 
 map.on('load', function() {
 	$.getJSON("http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson", function(countriesJson) {
-		console.log(countriesJson);
 		countryInformation = countriesJson;
 		loadPreviousData();
 	});
@@ -153,11 +152,9 @@ var frameIdx = function() {
 		++day
 		if (day == prevInfoJson.data.length) {
 			currentTimeLine = FUTURE;
-			//day = 0;
 		}
 	} else {
 		stopButton();
-		//drawEpidemicDay(day, currentTimeLine);
 		--day
 	}
 }
@@ -165,6 +162,7 @@ var frameIdx = function() {
 var launchButton = function() {
 	if (prevInfoJson != null && isLaunched != true) {
 		isLaunched = true;
+		document.getElementById("dateNow").disabled = true;
 		document.getElementById("dateNow");
 		interval = setInterval(frameIdx, 1500);
 	}
@@ -174,11 +172,13 @@ var resetButton = function() {
 	if (prevInfoJson != null) {
 		day = 0;
 		currentTimeLine = PAST;
+		document.getElementById("dateNow").value = prevInfoJson.data[day].date
 	}
 }
 
 var stopButton = function() {
 	if (isLaunched == true) {
+		document.getElementById("dateNow").disabled = false;
 		isLaunched = false;
 		clearInterval(interval);
 	}

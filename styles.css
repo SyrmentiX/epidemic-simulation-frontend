@@ -9,8 +9,20 @@ h1 {
 	margin-bottom: 20px;
 }
 
+#dateNow {
+	display: inline;
+	margin-bottom: 20px;
+}
+
+.dateText {
+	font: monospace;
+	margin:0;
+	margin-bottom: 20px;
+	margin-left: 10px;
+}
+
 .simulation-button {
-	width: 200px;
+	width: 95%;
 	height: 50px;
 	margin-right: 10px;
 	margin-left: 10px;
