@@ -12,13 +12,12 @@ Vue.component('settings-menu', {
 				<p>todo Timeline add calendar</p>\
 			</div>\
 			<div class="settings-column">\
-				<button class="simulation-button">Launch</button>\
-				<button class="simulation-button">Stop</button>\
-				<button class="simulation-button">Reset</button>\
+				<button onclick="launchButton()" class="simulation-button">Launch</button>\
+				<button onclick="stopButton()" class="simulation-button">Stop</button>\
+				<button onclick="resetButton()" class="simulation-button">Reset</button>\
 			</div>\
 			<div class="settings-column">\
-				<button class="simulation-button">Start day</button>\
-				<button class="simulation-button">Current day</button>\
+				<button onclick="drawStartEpidemicDay()" class="simulation-button">Start point</button>\
 			</div>\
 			<div class="top-column">\
 				<p>todo Top Infected Country</p>\

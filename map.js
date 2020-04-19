@@ -1,9 +1,15 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3lybSIsImEiOiJjazk1ZGJqZnEwNDJlM21tcHZxbnRwbW1tIn0.2GX6n3BUAz-c4vqDKb6dpw';
 
+const PAST = 0;
+const FUTURE = 1;
+
 var countryInformation;
-var prevCountryInfo;
+var prevInfoJson;
+var futureInfoJson;
 var isLaunched = false;
-var step = 0;
+var currentTimeLine = PAST;
+var day = 0;
+var interval;
 
 var map = new mapboxgl.Map({
 	container: 'map',
@@ -17,29 +23,35 @@ var popup = new mapboxgl.Popup({
 	closeOnClick: false
 });
 
+var removeSource = function() {
+	map.removeLayer('countries');
+	map.removeSource('countries');
+}
+
 var drawLayers = function(currentSituationJson, countriesJson) {
 	var midInfected = 0
 	var countCountry = 0
-    for (var key in currentSituationJson.data[0].countries) {
-		midInfected += currentSituationJson.data[0].countries[key].infected
+
+    for (var key in currentSituationJson.data[day].countries) {
+		midInfected += currentSituationJson.data[day].countries[key].infected
 		countCountry++
 	}
 	midInfected /= countCountry
 
-	for (var key in currentSituationJson.data[0].countries) {
-		var p = Math.min(1.0, currentSituationJson.data[0].countries[key].infected / midInfected)
+	for (var key in currentSituationJson.data[day].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected / midInfected)
 		var r = Math.round(255 * p)
 		var g = Math.round(255 * (1.0 - p))
 
 		var color = "rgba(" + r + ", " + g + ", 0, 1)"
-		currentSituationJson.data[0].countries[key].color = color
+		currentSituationJson.data[day].countries[key].color = color
 	}
 
 	for (var i = 0; i < countriesJson.features.length; i++) {
 		countriesJson.features[i].properties["color"] = 'transparent'
-		for (var key in currentSituationJson.data[0].countries) {
-			if (countriesJson.features[i].properties["POSTAL"] == key) {
-				countriesJson.features[i].properties["color"] = currentSituationJson.data[0].countries[key].color
+		for (var key in currentSituationJson.data[day].countries) {
+			if (countriesJson.features[i].properties["ISO_A2"] == key) {
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
 				break
 			}
 		}
@@ -74,7 +86,8 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 			while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
 				coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
 			}
-			var postalId = currentSituationJson.data[].countries[e.features[0].properties.POSTAL];
+			console.log(currentSituationJson, day);
+			var postalId = currentSituationJson.data[day].countries[e.features[0].properties.ISO_A2];
 			if (postalId != null) {
 				hoveredStateId = e.features[0].id;
 				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
@@ -95,17 +108,11 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	});
 }
 
-var loadTodayData = function() {
-	$.getJSON("http://104.248.59.99:8080/today", function(infoJson) {
-		console.log(infoJson);
-		drawLayers(infoJson, countryInformation);
-	});
-}
-
 var loadPreviousData = function() {
 	$.getJSON("http://104.248.59.99:8080/JHUCSSE", function(pastinfoJson) {
 		console.log(pastinfoJson);
-		prevCountryInfo = pastinfoJson;
+		prevInfoJson = pastinfoJson;
+		drawLayers(pastinfoJson, countryInformation);
 	});
 }
 
@@ -113,29 +120,59 @@ map.on('load', function() {
 	$.getJSON("http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson", function(countriesJson) {
 		console.log(countriesJson);
 		countryInformation = countriesJson;
-		loadTodayData();
+		loadPreviousData();
 	});
-	loadPreviousData();
 });
 
-var onUpdate = function() {
-	++step;
+var drawEpidemicDay = function(day, timeline) {
+	removeSource();
+	if (timeline == PAST) {
+		drawLayers(prevInfoJson, countryInformation);
+	} else {
+		drawLayers(futureInfoJson, countryInformation);
+	}
+}
+
+var drawStartEpidemicDay = function() {
+	if (countryInformation != null && prevInfoJson != null) {
+		day = 0;
+		currentTimeLine = PAST
+		drawEpidemicDay(day, currentTimeLine);
+	}
+}
+
+var frameIdx = function() {
+	if (currentTimeLine == PAST) {
+		drawEpidemicDay(day, currentTimeLine);
+		++day
+		if (day == prevInfoJson.data.length) {
+			day = 0;
+			currentTimeLine = FUTURE;	
+		}
+	} else {
+		stopButton();
+		//drawEpidemicDay(day, currentTimeLine);
+		//++day
+	}
 }
 
 var launchButton = function() {
-	if (prevCountryInfo != null && isLaunched != true) {
-
+	if (prevInfoJson != null && isLaunched != true) {
+		isLaunched = true;
+		interval = setInterval(frameIdx, 1000);
 	}
 }
 
 var resetButton = function() {
-	if (prevCountryInfo != null) {
-		step = 0;
+	if (prevInfoJson != null) {
+		day = 0;
+		currentTimeLine = PAST;
 	}
 }
 
 var stopButton = function() {
-	if (prevCountryInfo != null && isLaunched != true) {
-
+	if (isLaunched == true) {
+		isLaunched = false;
+		clearInterval(interval);
 	}
 }
