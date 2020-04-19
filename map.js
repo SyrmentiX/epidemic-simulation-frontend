@@ -18,6 +18,34 @@ var popup = new mapboxgl.Popup({
 });
 
 var drawLayers = function(currentSituationJson, countriesJson) {
+	var midInfected = 0
+	var countCountry = 0
+    for (var key in currentSituationJson.data[0].countries) {
+		midInfected += currentSituationJson.data[0].countries[key].infected
+		countCountry++
+	}
+	midInfected /= countCountry
+
+	for (var key in currentSituationJson.data[0].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[0].countries[key].infected / midInfected)
+		var r = Math.round(255 * p)
+		var g = Math.round(255 * (1.0 - p))
+
+		var color = "rgba(" + r + ", " + g + ", 0, 1)"
+		currentSituationJson.data[0].countries[key].color = color
+	}
+
+	for (var i = 0; i < countriesJson.features.length; i++) {
+		countriesJson.features[i].properties["color"] = 'transparent'
+		for (var key in currentSituationJson.data[0].countries) {
+			if (countriesJson.features[i].properties["POSTAL"] == key) {
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[0].countries[key].color
+				break
+			}
+		}
+	}
+	console.log(countriesJson)
+
 	map.addSource('countries', {
 		'type': 'geojson',
 		'data': countriesJson
@@ -28,13 +56,8 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 		'type': 'fill',
 		'source': 'countries',
 		'paint': {
-			'fill-color': 'red',
-			'fill-opacity': [
-				'case',
-				['boolean', ['feature-state', 'hover'], false],
-				1,
-				0.5
-			],
+			'fill-color': ['get', 'color'],
+			'fill-opacity': 0.6,
 			'fill-outline-color': 'rgba(200, 100, 240, 1)'					
 	 	 }
 	});
