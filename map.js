@@ -119,6 +119,7 @@ var loadPreviousData = function() {
 		document.getElementById("dateNow").max = prevInfoJson.data[prevInfoJson.data.length - 1].date
 		drawLayers(pastinfoJson, countryInformation);
 		document.getElementById("dateNow").disabled = false;
+		$("#loadspindiv").hide();
 	});
 }
 

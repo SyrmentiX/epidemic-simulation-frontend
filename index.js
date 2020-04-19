@@ -8,7 +8,7 @@ Vue.component('settings-menu', {
 			<h1>EPIDEMICSM</h1>\
 			</div>\
 			<div class="settings-column">\
-				<input disabled="true" align="middle" onchange="changeDate()" id="dateNow" type="date" id="dateNow"></input>\
+				<input disabled="true" onchange="changeDate()" id="dateNow" type="date" id="dateNow"></input>\
 				<span class="dateText">Hey select date</span>\
 			</div>\
 			<div class="settings-column">\
@@ -18,6 +18,9 @@ Vue.component('settings-menu', {
 			</div>\
 			<div class="settings-column">\
 				<button onclick="drawStartEpidemicDay()" class="simulation-button">Start point</button>\
+			</div>\
+			<div id="loadspindiv" class="settings-column">\
+				<div id="loadspin" class="spinner-grow text-warning"></div>\
 			</div>\
 		</div>'
 })

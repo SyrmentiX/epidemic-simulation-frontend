@@ -9,6 +9,14 @@ h1 {
 	margin-bottom: 20px;
 }
 
+#loadspindiv {
+	text-align: center;
+}
+
+#loadspin {
+	margin-bottom: 20px;
+}
+
 #dateNow {
 	display: inline;
 	margin-bottom: 20px;
