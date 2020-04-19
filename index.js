@@ -8,7 +8,7 @@ Vue.component('settings-menu', {
 			<h1>EPIDEMICSM</h1>\
 			</div>\
 			<div class="settings-column">\
-				<input type="date" id="dateNow"></input>\
+				<input id="dateNow" type="date" id="dateNow"></input>\
 				<p>todo Timeline add calendar</p>\
 			</div>\
 			<div class="settings-column">\
