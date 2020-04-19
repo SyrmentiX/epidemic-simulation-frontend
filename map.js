@@ -113,9 +113,11 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 }
 
 var loadPreviousData = function() {
-	$.getJSON("http://104.248.59.99:8080/JHUCSSE", function(pastinfoJson) {
+	$.getJSON("http://104.248.59.99:8080/predict?duration=20", function(pastinfoJson) {
 		console.log(pastinfoJson);
 		prevInfoJson = pastinfoJson;
+		document.getElementById("dateNow").min = prevInfoJson.data[0].date
+		document.getElementById("dateNow").max = prevInfoJson.data[prevInfoJson.data.length - 1].date
 		drawLayers(pastinfoJson, countryInformation);
 	});
 }
@@ -155,15 +157,16 @@ var frameIdx = function() {
 		}
 	} else {
 		stopButton();
-		drawEpidemicDay(day, currentTimeLine);
-		++day
+		//drawEpidemicDay(day, currentTimeLine);
+		--day
 	}
 }
 
 var launchButton = function() {
 	if (prevInfoJson != null && isLaunched != true) {
 		isLaunched = true;
-		interval = setInterval(frameIdx, 1000);
+		document.getElementById("dateNow");
+		interval = setInterval(frameIdx, 1500);
 	}
 }
 
@@ -178,5 +181,21 @@ var stopButton = function() {
 	if (isLaunched == true) {
 		isLaunched = false;
 		clearInterval(interval);
+	}
+}
+
+var getDay = function() {
+	var timeDiff = Math.abs(Date.parse(document.getElementById("dateNow").value) - Date.parse("2020-01-22"));
+	return Math.ceil(timeDiff / (1000 * 3600 * 24));
+}
+
+var changeDate = function() {
+	if (prevInfoJson != null && isLaunched != true) {
+		day = getDay();
+		if (map.getSource('countries') != null) {
+			frameIdx();
+		} else {
+			drawLayers(prevInfoJson, countryInformation);
+		}
 	}
 }
