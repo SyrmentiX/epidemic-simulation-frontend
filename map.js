@@ -1,6 +1,7 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3lybSIsImEiOiJjazk1ZGJqZnEwNDJlM21tcHZxbnRwbW1tIn0.2GX6n3BUAz-c4vqDKb6dpw';
 
 var countryInformation;
+var prevCountryInfo;
 
 var map = new mapboxgl.Map({
 	container: 'map',
@@ -48,10 +49,14 @@ var drawLayers = function(coronaJson, countriesJson) {
 			while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
 				coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
 			}
-			var postalId = coronaJson.data[0].countries[e.features[0].properties.WB_A2];
+			var postalId = coronaJson.data[0].countries[e.features[0].properties.POSTAL];
 			if (postalId != null) {
 				hoveredStateId = e.features[0].id;
-				popup.setLngLat(e.lngLat).setHTML(postalId.infected).addTo(map);
+				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
+								<strong>Infected: </strong>'+postalId.infected+'<br>\
+								<strong>Recovered: </strong>'+postalId.recovered+'<br>\
+								<strong>Deaths: </strong>'+postalId.deaths;
+				popup.setLngLat(e.lngLat).setHTML(message).addTo(map);
 			}
 		}
 	});
@@ -78,5 +83,10 @@ map.on('load', function() {
 		console.log(countriesJson);
 		countryInformation = countriesJson;
 		onUpdate();
+	});
+	
+	$.getJSON("http://104.248.59.99:8080/JHUCSSE", function(pastinfoJson) {
+		console.log(pastinfoJson);
+		prevCountryInfo = pastinfoJson;
 	});
 });
