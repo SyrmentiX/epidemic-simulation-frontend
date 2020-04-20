@@ -112,6 +112,44 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	});
 }
 
+var updateLayer = function(currentSituationJson, countriesJson) {
+	var midInfected = 0
+	var countCountry = 0
+
+    for (var key in currentSituationJson.data[day].countries) {
+		midInfected += currentSituationJson.data[day].countries[key].infected
+		countCountry++
+	}
+	midInfected /= countCountry
+
+	for (var key in currentSituationJson.data[day].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected * 2000 / currentSituationJson.data[day].countries[key].population)
+		var r = Math.round(255 * p)
+		var g = Math.round(255 * (1.0 - p))
+
+		var color = "rgba(" + r + ", " + g + ", 0, 1)"
+		currentSituationJson.data[day].countries[key].color = color
+	}
+
+	for (var i = 0; i < countriesJson.features.length; i++) {
+		countriesJson.features[i].properties["color"] = 'transparent'
+		for (var key in currentSituationJson.data[day].countries) {
+			if (countriesJson.features[i].properties["ISO_A2"] == key) {
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
+				break
+			}
+		}
+	}
+	
+	document.getElementById("dateNow").value = currentSituationJson.data[day].date
+	if (hoveredStateId) {
+		map.getCanvas().style.cursor = '';
+		popup.remove();
+	}
+
+	map.getSource('countries').setData(countriesJson);
+}
+
 var loadPreviousData = function() {
 	$.getJSON("http://104.248.59.99:8080/predict?duration=20", function(pastinfoJson) {
 		prevInfoJson = pastinfoJson;
@@ -131,9 +169,13 @@ map.on('load', function() {
 });
 
 var drawEpidemicDay = function(day, timeline) {
-	removeSource();
+	// removeSource();
 	if (timeline == PAST) {
-		drawLayers(prevInfoJson, countryInformation);
+		if (map.getSource("countries") != null) {
+			updateLayer(prevInfoJson, countryInformation);
+		} else {
+			drawLayers(prevInfoJson, countryInformation);
+		}
 	} else {
 		drawLayers(futureInfoJson, countryInformation);
 	}
