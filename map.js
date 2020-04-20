@@ -23,6 +23,7 @@ var popup = new mapboxgl.Popup({
 	closeButton: false,
 	closeOnClick: false
 });
+var countryInPopup;
 
 var removeSource = function() {
 	map.removeLayer('countries');
@@ -62,6 +63,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	if (hoveredStateId) {
 		map.getCanvas().style.cursor = '';
 		popup.remove();
+		countryInPopup = null
 	}
 
 	map.addSource('countries', {
@@ -89,11 +91,13 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 			if (hoveredStateId) {
 				map.getCanvas().style.cursor = '';
 				popup.remove();
+				countryInPopup = null
 			}
 
 			var postalId = currentSituationJson.data[day].countries[e.features[0].properties.ISO_A2];
 			if (postalId != null) {
 				hoveredStateId = e.features[0].id;
+				countryInPopup = e.features[0].properties.ISO_A2
 				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
 							   <strong>Infected: </strong>'+postalId.infected+'<br>\
 							   <strong>Recovered: </strong>'+postalId.recovered+'<br>\
@@ -107,6 +111,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 		if (hoveredStateId) {
 			map.getCanvas().style.cursor = '';
 			popup.remove();
+			countryInPopup = null
 		}
 		hoveredStateId = null;
 	});
@@ -143,8 +148,14 @@ var updateLayer = function(currentSituationJson, countriesJson) {
 	
 	document.getElementById("dateNow").value = currentSituationJson.data[day].date
 	if (hoveredStateId) {
-		map.getCanvas().style.cursor = '';
-		popup.remove();
+		var postalId = currentSituationJson.data[day].countries[countryInPopup];
+		if (postalId != null) {
+			var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
+							<strong>Infected: </strong>'+postalId.infected+'<br>\
+							<strong>Recovered: </strong>'+postalId.recovered+'<br>\
+							<strong>Deaths: </strong>'+postalId.deaths;
+			popup.setHTML(message);
+		}
 	}
 
 	map.getSource('countries').setData(countriesJson);
