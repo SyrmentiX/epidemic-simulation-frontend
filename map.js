@@ -204,3 +204,13 @@ var changeDate = function() {
 		drawEpidemicDay()
 	}
 }
+
+var changeFPS = function() {
+	var new_val = $("#framesPerSecond").val()
+	$("#framesPerSecondText").text("FPS: " + new_val)
+	FPS = new_val
+	if (isLaunched) {
+		clearInterval(interval)
+		interval = setInterval(nextDay, 1000 / FPS)
+	}
+}

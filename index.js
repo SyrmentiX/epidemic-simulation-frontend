@@ -8,8 +8,14 @@ Vue.component('settings-menu', {
 			<h1>EPIDEMICSM</h1>\
 			</div>\
 			<div class="settings-column">\
-				<input disabled="true" onchange="changeDate()" id="dateNow" type="date" id="dateNow"></input>\
-				<span class="dateText">Hey select date</span>\
+				<div>\
+					<input type="date" id="dateNow" disabled="true" onchange="changeDate()"></input>\
+					<span class="dateText">Hey select date</span>\
+				</div>\
+				<div>\
+					<input type="range" id="framesPerSecond" min="1" max="5" step="1" value="1" onchange="changeFPS()"></input>\
+					<span id="framesPerSecondText">FPS: 1</span>\
+				</div>\
 			</div>\
 			<div class="settings-column">\
 				<button onclick="launchButton()" class="simulation-button">Launch</button>\

@@ -22,6 +22,11 @@ h1 {
 	margin-bottom: 20px;
 }
 
+#framesPerSecond {
+	display: inline;
+	margin-bottom: 20px;
+}
+
 .dateText {
 	font: monospace;
 	margin:0;
