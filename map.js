@@ -1,18 +1,13 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3lybSIsImEiOiJjazk1ZGJqZnEwNDJlM21tcHZxbnRwbW1tIn0.2GX6n3BUAz-c4vqDKb6dpw';
 
-const PAST = 0;
-const FUTURE = 1;
+var countryInformation = null
+var infoJson = null
+var isLaunched = false
 
-var countryInformation;
-var prevInfoJson;
-var futureInfoJson;
-var isLaunched = false;
-var currentTimeLine = PAST;
-var frameIdx = 0;
+var frameIdx = 0
 var FPS = 1
 var drawnFrameIdx = 0
-var screen = 0;
-var interval;
+var interval = null
 
 var srcData = "http://104.248.59.99:8080/predict?duration=20"
 var srcGEO = "http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson"
@@ -62,7 +57,7 @@ var createLayer = function(currentSituationJson, countriesJson) {
 	map.addSource('countries', {
 		'type': 'geojson',
 		'data': countriesJson
-	});
+	})
 
 	map.addLayer({
 		'id': 'countries',
@@ -76,37 +71,34 @@ var createLayer = function(currentSituationJson, countriesJson) {
 			'fill-opacity': 0.6,
 			'fill-outline-color': 'rgba(200, 100, 240, 1)'					
 	 	 }
-	});
+	})
 
 	map.on('mousemove', 'countries', function(e) {
-		// map.getCanvas().style.cursor = 'pointer';
 		if (e.features.length > 0) {
 			if (hoveredStateId) {
-				// map.getCanvas().style.cursor = '';
-				popup.remove();
+				popup.remove()
 				countryInPopup = null
 			}
 
 			var postalId = currentSituationJson.data[drawnFrameIdx].countries[e.features[0].properties.ISO_A2];
 			if (postalId) {
-				hoveredStateId = e.features[0].id;
+				hoveredStateId = e.features[0].id
 				countryInPopup = e.features[0].properties.ISO_A2
 				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
 							   <strong>Infected: </strong>'+postalId.infected+'<br>\
 							   <strong>Recovered: </strong>'+postalId.recovered+'<br>\
 							   <strong>Deaths: </strong>'+postalId.deaths;
-				popup.setLngLat(e.lngLat).setHTML(message).addTo(map);
+				popup.setLngLat(e.lngLat).setHTML(message).addTo(map)
 			}
 		}
 	});
 
 	map.on('mouseleave', 'countries', function() {
 		if (hoveredStateId) {
-			// map.getCanvas().style.cursor = '';
-			popup.remove();
+			popup.remove()
 			countryInPopup = null
 		}
-		hoveredStateId = null;
+		hoveredStateId = null
 	});
 }
 
@@ -128,82 +120,76 @@ var updateLayer = function(currentSituationJson, countriesJson) {
 		}
 	}
 
-	map.getSource('countries').setData(countriesJson);
+	map.getSource('countries').setData(countriesJson)
 }
 
-var loadPreviousData = function() {
+var loadInfoJson = function() {
 	$.getJSON(srcData, function(pastinfoJson) {
-		prevInfoJson = pastinfoJson;
-		createLayer(pastinfoJson, countryInformation);
-		minDate = Date.parse(prevInfoJson.data[0].date)
-		maxDate = Date.parse(prevInfoJson.data[prevInfoJson.data.length - 1].date)
-		$("#dateNow").val(prevInfoJson.data[0].date)
-		$("#dateNow").prop("min", prevInfoJson.data[0].date)
-		$("#dateNow").prop("max", prevInfoJson.data[prevInfoJson.data.length - 1].date)
-		$("#dateNow").prop("disabled", false);
-		$("#loadspindiv").hide();
+		infoJson = pastinfoJson
+		createLayer(pastinfoJson, countryInformation)
+
+		minDate = Date.parse(infoJson.data[0].date)
+		maxDate = Date.parse(infoJson.data[infoJson.data.length - 1].date)
+
+		$("#dateNow").val(infoJson.data[0].date)
+		$("#dateNow").prop("min", infoJson.data[0].date)
+		$("#dateNow").prop("max", infoJson.data[infoJson.data.length - 1].date)
+		$("#dateNow").prop("disabled", false)
+		$("#loadspindiv").hide()
 	});
 }
 
 map.on('load', function() {
 	$.getJSON(srcGEO, function(countriesJson) {
-		countryInformation = countriesJson;
-		loadPreviousData();
+		countryInformation = countriesJson
+		loadInfoJson()
 	});
 });
 
-var drawEpidemicDay = function(timeline) {
-	if (timeline == PAST) {
-		if (map.getSource("countries")) {
-			updateLayer(prevInfoJson, countryInformation);
-		} else {
-			createLayer(prevInfoJson, countryInformation);
-		}
+var drawEpidemicDay = function() {
+	if (map.getSource("countries")) {
+		updateLayer(infoJson, countryInformation)
 	} else {
-		createLayer(futureInfoJson, countryInformation);
+		createLayer(infoJson, countryInformation)
 	}
 }
 
 var nextDay = function() {
-	if (currentTimeLine == PAST) {
-		$("#dateNow").val(prevInfoJson.data[frameIdx].date)
-		drawEpidemicDay(currentTimeLine);
+	if (frameIdx < infoJson.data.length) {
+		$("#dateNow").val(infoJson.data[frameIdx].date)
+		drawEpidemicDay()
 		++frameIdx
-		if (frameIdx == prevInfoJson.data.length) {
-			currentTimeLine = FUTURE;
-		}
 	} else {
-		stopButton();
-		--frameIdx
+		stopButton()
 	}
 }
 
 var launchButton = function() {
-	if (prevInfoJson && !isLaunched) {
-		isLaunched = true;
-		$("#dateNow").prop("disabled", true);
-		interval = setInterval(nextDay, 1000 / FPS);
+	if (infoJson && !isLaunched) {
+		isLaunched = true
+		$("#dateNow").prop("disabled", true)
+		interval = setInterval(nextDay, 1000 / FPS)
 	}
 }
 
 var resetButton = function() {
-	if (prevInfoJson) {
-		frameIdx = 0;
-		currentTimeLine = PAST;
-		$("#dateNow").val(prevInfoJson.data[frameIdx].date)
+	if (infoJson) {
+		frameIdx = 0
+		$("#dateNow").val(infoJson.data[frameIdx].date)
+		drawEpidemicDay()
 	}
 }
 
 var stopButton = function() {
 	if (isLaunched) {
-		isLaunched = false;
+		isLaunched = false
+		clearInterval(interval)
 		$("#dateNow").prop("disabled", false);
-		clearInterval(interval);
 	}
 }
 
 var changeDate = function() {
-	if (prevInfoJson && !isLaunched) {
+	if (infoJson && !isLaunched) {
 		nowDate = Date.parse($("#dateNow").val())
 		if (nowDate > maxDate) {
 			frameIdx = Math.ceil((maxDate - minDate) / (1000 * 3600 * 24))
@@ -215,6 +201,6 @@ var changeDate = function() {
 			frameIdx = Math.ceil((nowDate - minDate) / (1000 * 3600 * 24))
 		}
 		
-		drawEpidemicDay(currentTimeLine)
+		drawEpidemicDay()
 	}
 }
