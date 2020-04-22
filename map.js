@@ -8,7 +8,9 @@ var prevInfoJson;
 var futureInfoJson;
 var isLaunched = false;
 var currentTimeLine = PAST;
-var day = 0;
+var frameIdx = 0;
+var FPS = 1
+var drawnFrameIdx = 0
 var screen = 0;
 var interval;
 
@@ -25,47 +27,43 @@ var popup = new mapboxgl.Popup({
 });
 var countryInPopup;
 
-var removeSource = function() {
-	map.removeLayer('countries');
-	map.removeSource('countries');
-}
+var minDate = null
 
-var drawLayers = function(currentSituationJson, countriesJson) {
+var repaintLayer = function(currentSituationJson, countriesJson) {
 	var midInfected = 0
 	var countCountry = 0
 
-    for (var key in currentSituationJson.data[day].countries) {
-		midInfected += currentSituationJson.data[day].countries[key].infected
+    for (var key in currentSituationJson.data[frameIdx].countries) {
+		midInfected += currentSituationJson.data[frameIdx].countries[key].infected
 		countCountry++
 	}
 	midInfected /= countCountry
 
-	for (var key in currentSituationJson.data[day].countries) {
-		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected * 2000 / currentSituationJson.data[day].countries[key].population)
+	for (var key in currentSituationJson.data[frameIdx].countries) {
+		var p = Math.min(1.0, currentSituationJson.data[frameIdx].countries[key].infected * 2000 / currentSituationJson.data[frameIdx].countries[key].population)
 		var r = Math.round(255 * p)
 		var g = Math.round(255 * (1.0 - p))
 
 		var color = "rgba(" + r + ", " + g + ", 0, 1)"
-		currentSituationJson.data[day].countries[key].color = color
+		currentSituationJson.data[frameIdx].countries[key].color = color
 	}
 
 	for (var i = 0; i < countriesJson.features.length; i++) {
 		countriesJson.features[i].properties["color"] = 'transparent'
-		for (var key in currentSituationJson.data[day].countries) {
+		for (var key in currentSituationJson.data[frameIdx].countries) {
 			if (countriesJson.features[i].properties["ISO_A2"] == key) {
-				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
+				countriesJson.features[i].properties["color"] = currentSituationJson.data[frameIdx].countries[key].color
 				break
 			}
 		}
 	}
-	
-	document.getElementById("dateNow").value = currentSituationJson.data[day].date
-	if (hoveredStateId) {
-		map.getCanvas().style.cursor = '';
-		popup.remove();
-		countryInPopup = null
-	}
 
+	drawnFrameIdx = frameIdx
+}
+
+var createLayer = function(currentSituationJson, countriesJson) {
+	repaintLayer(currentSituationJson, countriesJson)
+	
 	map.addSource('countries', {
 		'type': 'geojson',
 		'data': countriesJson
@@ -86,15 +84,15 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 	});
 
 	map.on('mousemove', 'countries', function(e) {
-		map.getCanvas().style.cursor = 'pointer';
+		// map.getCanvas().style.cursor = 'pointer';
 		if (e.features.length > 0) {
 			if (hoveredStateId) {
-				map.getCanvas().style.cursor = '';
+				// map.getCanvas().style.cursor = '';
 				popup.remove();
 				countryInPopup = null
 			}
 
-			var postalId = currentSituationJson.data[day].countries[e.features[0].properties.ISO_A2];
+			var postalId = currentSituationJson.data[drawnFrameIdx].countries[e.features[0].properties.ISO_A2];
 			if (postalId != null) {
 				hoveredStateId = e.features[0].id;
 				countryInPopup = e.features[0].properties.ISO_A2
@@ -109,7 +107,7 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 
 	map.on('mouseleave', 'countries', function() {
 		if (hoveredStateId) {
-			map.getCanvas().style.cursor = '';
+			// map.getCanvas().style.cursor = '';
 			popup.remove();
 			countryInPopup = null
 		}
@@ -118,43 +116,20 @@ var drawLayers = function(currentSituationJson, countriesJson) {
 }
 
 var updateLayer = function(currentSituationJson, countriesJson) {
-	var midInfected = 0
-	var countCountry = 0
-
-    for (var key in currentSituationJson.data[day].countries) {
-		midInfected += currentSituationJson.data[day].countries[key].infected
-		countCountry++
-	}
-	midInfected /= countCountry
-
-	for (var key in currentSituationJson.data[day].countries) {
-		var p = Math.min(1.0, currentSituationJson.data[day].countries[key].infected * 2000 / currentSituationJson.data[day].countries[key].population)
-		var r = Math.round(255 * p)
-		var g = Math.round(255 * (1.0 - p))
-
-		var color = "rgba(" + r + ", " + g + ", 0, 1)"
-		currentSituationJson.data[day].countries[key].color = color
-	}
-
-	for (var i = 0; i < countriesJson.features.length; i++) {
-		countriesJson.features[i].properties["color"] = 'transparent'
-		for (var key in currentSituationJson.data[day].countries) {
-			if (countriesJson.features[i].properties["ISO_A2"] == key) {
-				countriesJson.features[i].properties["color"] = currentSituationJson.data[day].countries[key].color
-				break
-			}
-		}
-	}
+	repaintLayer(currentSituationJson, countriesJson)
 	
-	document.getElementById("dateNow").value = currentSituationJson.data[day].date
 	if (hoveredStateId) {
-		var postalId = currentSituationJson.data[day].countries[countryInPopup];
-		if (postalId != null) {
+		var postalId = currentSituationJson.data[drawnFrameIdx].countries[countryInPopup];
+		if (postalId) {
 			var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
-							<strong>Infected: </strong>'+postalId.infected+'<br>\
-							<strong>Recovered: </strong>'+postalId.recovered+'<br>\
-							<strong>Deaths: </strong>'+postalId.deaths;
-			popup.setHTML(message);
+						   <strong>Infected: </strong>'+postalId.infected+'<br>\
+						   <strong>Recovered: </strong>'+postalId.recovered+'<br>\
+						   <strong>Deaths: </strong>'+postalId.deaths;
+			popup.setHTML(message)
+		} else {
+			popup.remove()
+			countryInPopup = null
+			hoveredStateId = null
 		}
 	}
 
@@ -164,10 +139,12 @@ var updateLayer = function(currentSituationJson, countriesJson) {
 var loadPreviousData = function() {
 	$.getJSON("http://104.248.59.99:8080/predict?duration=20", function(pastinfoJson) {
 		prevInfoJson = pastinfoJson;
-		document.getElementById("dateNow").min = prevInfoJson.data[0].date
-		document.getElementById("dateNow").max = prevInfoJson.data[prevInfoJson.data.length - 1].date
-		drawLayers(pastinfoJson, countryInformation);
-		document.getElementById("dateNow").disabled = false;
+		createLayer(pastinfoJson, countryInformation);
+		minDate = Date.parse(prevInfoJson.data[0].date)
+		$("#dateNow").val(prevInfoJson.data[0].date)
+		$("#dateNow").prop("min", prevInfoJson.data[0].date)
+		$("#dateNow").prop("max", prevInfoJson.data[prevInfoJson.data.length - 1].date)
+		$("#dateNow").prop("disabled", false);
 		$("#loadspindiv").hide();
 	});
 }
@@ -179,77 +156,68 @@ map.on('load', function() {
 	});
 });
 
-var drawEpidemicDay = function(day, timeline) {
-	// removeSource();
+var drawEpidemicDay = function(timeline) {
 	if (timeline == PAST) {
 		if (map.getSource("countries") != null) {
 			updateLayer(prevInfoJson, countryInformation);
 		} else {
-			drawLayers(prevInfoJson, countryInformation);
+			createLayer(prevInfoJson, countryInformation);
 		}
 	} else {
-		drawLayers(futureInfoJson, countryInformation);
+		createLayer(futureInfoJson, countryInformation);
 	}
 }
 
-var drawStartEpidemicDay = function() {
-	if (countryInformation != null && prevInfoJson != null) {
-		day = 0;
-		currentTimeLine = PAST
-		drawEpidemicDay(day, currentTimeLine);
-	}
-}
-
-var frameIdx = function() {
+var nextDay = function() {
 	if (currentTimeLine == PAST) {
-		drawEpidemicDay(day, currentTimeLine);
-		++day
-		if (day == prevInfoJson.data.length) {
+		$("#dateNow").val(prevInfoJson.data[frameIdx].date)
+		drawEpidemicDay(currentTimeLine);
+		++frameIdx
+		if (frameIdx == prevInfoJson.data.length) {
 			currentTimeLine = FUTURE;
 		}
 	} else {
 		stopButton();
-		--day
+		--frameIdx
 	}
 }
 
 var launchButton = function() {
 	if (prevInfoJson != null && isLaunched != true) {
 		isLaunched = true;
-		document.getElementById("dateNow").disabled = true;
-		document.getElementById("dateNow");
-		interval = setInterval(frameIdx, 1500);
+		$("#dateNow").prop("disabled", true);
+		interval = setInterval(nextDay, 1000 / FPS);
 	}
 }
 
 var resetButton = function() {
 	if (prevInfoJson != null) {
-		day = 0;
+		frameIdx = 0;
 		currentTimeLine = PAST;
-		document.getElementById("dateNow").value = prevInfoJson.data[day].date
+		$("#dateNow").val(prevInfoJson.data[frameIdx].date)
 	}
 }
 
 var stopButton = function() {
 	if (isLaunched == true) {
-		document.getElementById("dateNow").disabled = false;
+		$("#dateNow").prop("disabled", false);
 		isLaunched = false;
 		clearInterval(interval);
 	}
 }
 
 var getDay = function() {
-	var timeDiff = Math.abs(Date.parse(document.getElementById("dateNow").value) - Date.parse("2020-01-22"));
+	var timeDiff = Math.abs(Date.parse($("#dateNow").val()) - minDate);
 	return Math.ceil(timeDiff / (1000 * 3600 * 24));
 }
 
 var changeDate = function() {
 	if (prevInfoJson != null && isLaunched != true) {
-		day = getDay();
+		frameIdx = getDay();
 		if (map.getSource('countries') != null) {
-			frameIdx();
+			nextDay();
 		} else {
-			drawLayers(prevInfoJson, countryInformation);
+			createLayer(prevInfoJson, countryInformation);
 		}
 	}
 }
