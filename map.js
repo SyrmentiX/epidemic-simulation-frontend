@@ -14,6 +14,9 @@ var drawnFrameIdx = 0
 var screen = 0;
 var interval;
 
+var srcData = "http://104.248.59.99:8080/predict?duration=20"
+var srcGEO = "http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson"
+
 var map = new mapboxgl.Map({
 	container: 'map',
 	style: 'mapbox://styles/mapbox/streets-v11'
@@ -28,17 +31,9 @@ var popup = new mapboxgl.Popup({
 var countryInPopup;
 
 var minDate = null
+var maxDate = null
 
 var repaintLayer = function(currentSituationJson, countriesJson) {
-	var midInfected = 0
-	var countCountry = 0
-
-    for (var key in currentSituationJson.data[frameIdx].countries) {
-		midInfected += currentSituationJson.data[frameIdx].countries[key].infected
-		countCountry++
-	}
-	midInfected /= countCountry
-
 	for (var key in currentSituationJson.data[frameIdx].countries) {
 		var p = Math.min(1.0, currentSituationJson.data[frameIdx].countries[key].infected * 2000 / currentSituationJson.data[frameIdx].countries[key].population)
 		var r = Math.round(255 * p)
@@ -93,7 +88,7 @@ var createLayer = function(currentSituationJson, countriesJson) {
 			}
 
 			var postalId = currentSituationJson.data[drawnFrameIdx].countries[e.features[0].properties.ISO_A2];
-			if (postalId != null) {
+			if (postalId) {
 				hoveredStateId = e.features[0].id;
 				countryInPopup = e.features[0].properties.ISO_A2
 				var message = '<strong>Country: </strong>'+postalId.countryName+'<br>\
@@ -137,10 +132,11 @@ var updateLayer = function(currentSituationJson, countriesJson) {
 }
 
 var loadPreviousData = function() {
-	$.getJSON("http://104.248.59.99:8080/predict?duration=20", function(pastinfoJson) {
+	$.getJSON(srcData, function(pastinfoJson) {
 		prevInfoJson = pastinfoJson;
 		createLayer(pastinfoJson, countryInformation);
 		minDate = Date.parse(prevInfoJson.data[0].date)
+		maxDate = Date.parse(prevInfoJson.data[prevInfoJson.data.length - 1].date)
 		$("#dateNow").val(prevInfoJson.data[0].date)
 		$("#dateNow").prop("min", prevInfoJson.data[0].date)
 		$("#dateNow").prop("max", prevInfoJson.data[prevInfoJson.data.length - 1].date)
@@ -150,7 +146,7 @@ var loadPreviousData = function() {
 }
 
 map.on('load', function() {
-	$.getJSON("http://104.248.59.99/ne_110m_admin_0_countries_fixed.geojson", function(countriesJson) {
+	$.getJSON(srcGEO, function(countriesJson) {
 		countryInformation = countriesJson;
 		loadPreviousData();
 	});
@@ -158,7 +154,7 @@ map.on('load', function() {
 
 var drawEpidemicDay = function(timeline) {
 	if (timeline == PAST) {
-		if (map.getSource("countries") != null) {
+		if (map.getSource("countries")) {
 			updateLayer(prevInfoJson, countryInformation);
 		} else {
 			createLayer(prevInfoJson, countryInformation);
@@ -183,7 +179,7 @@ var nextDay = function() {
 }
 
 var launchButton = function() {
-	if (prevInfoJson != null && isLaunched != true) {
+	if (prevInfoJson && !isLaunched) {
 		isLaunched = true;
 		$("#dateNow").prop("disabled", true);
 		interval = setInterval(nextDay, 1000 / FPS);
@@ -191,7 +187,7 @@ var launchButton = function() {
 }
 
 var resetButton = function() {
-	if (prevInfoJson != null) {
+	if (prevInfoJson) {
 		frameIdx = 0;
 		currentTimeLine = PAST;
 		$("#dateNow").val(prevInfoJson.data[frameIdx].date)
@@ -199,25 +195,26 @@ var resetButton = function() {
 }
 
 var stopButton = function() {
-	if (isLaunched == true) {
-		$("#dateNow").prop("disabled", false);
+	if (isLaunched) {
 		isLaunched = false;
+		$("#dateNow").prop("disabled", false);
 		clearInterval(interval);
 	}
 }
 
-var getDay = function() {
-	var timeDiff = Math.abs(Date.parse($("#dateNow").val()) - minDate);
-	return Math.ceil(timeDiff / (1000 * 3600 * 24));
-}
-
 var changeDate = function() {
-	if (prevInfoJson != null && isLaunched != true) {
-		frameIdx = getDay();
-		if (map.getSource('countries') != null) {
-			nextDay();
+	if (prevInfoJson && !isLaunched) {
+		nowDate = Date.parse($("#dateNow").val())
+		if (nowDate > maxDate) {
+			frameIdx = Math.ceil((maxDate - minDate) / (1000 * 3600 * 24))
+			$("#dateNow").val($("#dateNow").prop("max"))
+		} else if (nowDate < minDate) {
+			frameIdx = 0
+			$("#dateNow").val($("#dateNow").prop("min"))
 		} else {
-			createLayer(prevInfoJson, countryInformation);
+			frameIdx = Math.ceil((nowDate - minDate) / (1000 * 3600 * 24))
 		}
+		
+		drawEpidemicDay(currentTimeLine)
 	}
 }
