@@ -191,12 +191,13 @@ var stopButton = function() {
 var changeDate = function() {
 	if (infoJson && !isLaunched) {
 		nowDate = Date.parse($("#dateNow").val())
-		if (nowDate > maxDate) {
-			frameIdx = Math.ceil((maxDate - minDate) / (1000 * 3600 * 24))
-			$("#dateNow").val($("#dateNow").prop("max"))
-		} else if (nowDate < minDate) {
+
+		if (isNaN(nowDate) || nowDate < minDate) {
 			frameIdx = 0
 			$("#dateNow").val($("#dateNow").prop("min"))
+		} else if (nowDate > maxDate) {
+			frameIdx = Math.ceil((maxDate - minDate) / (1000 * 3600 * 24))
+			$("#dateNow").val($("#dateNow").prop("max"))
 		} else {
 			frameIdx = Math.ceil((nowDate - minDate) / (1000 * 3600 * 24))
 		}
